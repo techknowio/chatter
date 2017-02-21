@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Hello World!</title>
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+  </head>
+  <body>
+    <input type="button" onClick="dial()" value="Dial"> <br />
+    <span id="newCall"></span>
+    <div id="myModal" class="modal fade" role="dialog" tabindex="-1" data-backdrop="static" data-keyboard="false" aria-hidden="true" aria-labelledby="myModalLabel">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h4 class="modal-title">Welcome! Please Create An Account</h4>
+          </div>
+          <div class="modal-body">
+            <form>
+              <div class="form-group">
+                <label for="Your Name">Enter Your Name</label>
+                <input type="text" class="form-control" id="name" aria-describedby="nameHelp" placeholder="Enter Your Name">
+                <small id="emailHelp" class="form-text text-muted">This will define how you appear when you call someone</small>
+              </div>
+              <div class="form-group">
+                <label for="Your Name">Enter Your Password</label>
+                <input type="password" class="form-control" id="name" aria-describedby="password1Help" placeholder="Enter Your Password">
+                <small id="passwordHelp" class="form-text text-muted">This is your private password, it cannot be recovered</small>
+              </div>
+              <div class="form-group">
+                <label for="Your Name">Enter Your Password Again To Verify</label>
+                <input type="password" class="form-control" id="name" aria-describedby="password2Help" placeholder="Enter Your Password Again">
+                <small id="passwordHelp" class="form-text text-muted">Repeat Your Password Incase Of a Typo</small>
+              </div>
+          </div>
+          <div class="modal-footer">
+            <button type="submit" class="btn btn-success" onClick="login()">Login</button>
+            <button type="submit" class="btn btn-primary" onClick="createAccount()">Create Account</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </body>
+  <script src="js/sip-0.7.7.min.js"></script>
+  <script>
+    window.$ = window.jQuery = require('./js/jquery-3.1.1.min.js');
+  </script>
+  <script src="js/bootstrap.min.js"></script>
+  <script>
+  var db;
+  var username;
+  var password;
+  var name;
+  var extension;
+  var rtc;
+  var sipSession;
+
+
+
+  function setupUA() {
+    rtc = new SIP.UA({
+      uri: '',
+      wsServers: [''],
+      register: true,
+      password: '',
+      traceSip: true,
+      authorizationUser: "",
+      displayName: ''
+    });
+    rtc.start();
+    rtc.on('message', onMessage);
+    rtc.on('invite', function (session) {
+      sipSession = session;
+      console.log(session.remoteIdentity.displayName);
+      $("#newCall").html("New Call From : " + session.remoteIdentity.displayName +
+        ' <button type="button" class="btn btn-success" onClick="answer()">Answer</button>'
+      );
+      sipSession.on('accepted', function (data) {
+        $("#newCall").html("On The Call With : " + session.remoteIdentity.displayName +
+          ' <button type="button" class="btn btn-danger" onClick="hangup()">Hangup</button>');
+      });
+      sipSession.on('cancel',function (session) {
+        $("#newCall").html("");
+      });
+
+      sipSession.on('failed', function (data) {
+        $("#newCall").html("");
+      });
+
+      sipSession.on('rejected', function (response, cause) {
+        $("#newCall").html("");
+      });
+      sipSession.on('bye', function(request) {
+        $("#newCall").html("");
+      });
+    });
+  }
+
+  function onMessage(message) {
+    console.log(message);
+  }
+  function dial() {
+      var options = {
+        media: {
+          constraints: {
+            audio: true
+          }
+        }
+      };
+
+      session = rtc.invite('sip:6001@webrtc.sipmeeting.com', options);
+  }
+  $(document).ready(function() {
+       db = window.openDatabase("WebRTC", "1.0", "Sipmeeting WebRTC", 1000000);
+       db.transaction(function(tx) {
+           tx.executeSql("CREATE TABLE IF NOT EXISTS users(ID INTEGER PRIMARY KEY ASC, username TEXT, password TEXT, extension TEXT, name TEXT)", []);
+         });
+       if (typeof username !== 'undefined' || username) {
+         console.log("Setting up UA");
+         //setupUA();
+       } else {
+         //show the modal so the person can sign up!
+         $("#myModal").modal();
+       }
+  });
+
+  function answer() {
+    sipSession.accept();
+  }
+  function hangup() {
+    sipSession.bye();
+  }
+
+  </script>
+</html>

@@ -1,0 +1,9 @@
+{
+  "name": "Chatter",
+  "version": "0.0.1",
+  "main": "main.js",
+  "dependencies": {
+    "jQuery": "^1.7.4",
+    "jsdom": "^9.11.0"
+  }
+}
