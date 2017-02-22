@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="UTF-8">
-    <title>Hello World!</title>
+    <title>Chatter!</title>
     <link rel="stylesheet" href="css/bootstrap.min.css">
   </head>
   <body>
@@ -15,7 +15,9 @@
             <h4 class="modal-title">Welcome! Please Create An Account</h4>
           </div>
           <div class="modal-body">
-            <form>
+            <div class="alert alert-danger" id="myModalAlert" style="display: none;">
+              <span id="myModalAlertMsg"></span>
+            </div>
               <div class="form-group">
                 <label for="Your Name">Enter Your Name</label>
                 <input type="text" class="form-control" id="name" aria-describedby="nameHelp" placeholder="Enter Your Name">
@@ -23,12 +25,12 @@
               </div>
               <div class="form-group">
                 <label for="Your Name">Enter Your Password</label>
-                <input type="password" class="form-control" id="name" aria-describedby="password1Help" placeholder="Enter Your Password">
+                <input type="password" class="form-control" id="password1" aria-describedby="password1Help" placeholder="Enter Your Password">
                 <small id="passwordHelp" class="form-text text-muted">This is your private password, it cannot be recovered</small>
               </div>
               <div class="form-group">
                 <label for="Your Name">Enter Your Password Again To Verify</label>
-                <input type="password" class="form-control" id="name" aria-describedby="password2Help" placeholder="Enter Your Password Again">
+                <input type="password" class="form-control" id="password2" aria-describedby="password2Help" placeholder="Enter Your Password Again">
                 <small id="passwordHelp" class="form-text text-muted">Repeat Your Password Incase Of a Typo</small>
               </div>
           </div>
@@ -40,6 +42,35 @@
 
       </div>
     </div>
+
+    <div id="myLoginModal" class="modal fade" role="dialog" tabindex="-1" data-backdrop="static" data-keyboard="false" aria-hidden="true" aria-labelledby="myModalLabel">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h4 class="modal-title">Welcome! Please Login</h4>
+          </div>
+          <div class="modal-body">
+              <div class="form-group">
+                <label for="Your Name">Enter Your Extension</label>
+                <input type="text" class="form-control" id="extension" aria-describedby="extensionHelp" placeholder="Enter Your Extension">
+                <small id="emailHelp" class="form-text text-muted">This is the Extension You Were Given When you Originally Signed Up</small>
+              </div>
+              <div class="form-group">
+                <label for="Your Name">Enter Your Password</label>
+                <input type="password" class="form-control" id="name" aria-describedby="password1Help" placeholder="Enter Your Password">
+                <small id="passwordHelp" class="form-text text-muted">This is your private password, it cannot be recovered</small>
+              </div>
+          </div>
+          <div class="modal-footer">
+            <button type="submit" class="btn btn-success" onClick="cancelLogin()">Cancel</button>
+            <button type="submit" class="btn btn-primary" onClick="loginNow()">Login</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+
   </body>
   <script src="js/sip-0.7.7.min.js"></script>
   <script>
@@ -54,8 +85,40 @@
   var extension;
   var rtc;
   var sipSession;
+  var isHiding = 0;
 
+  function createAccount() {
+    $("#myModalAlert").hide();
+    var userName = $("#name").val();
+    var password1 = $("#password1").val();
+    var password2 = $("#password2").val();
+    if(password1.trim() == "") {
+	$("#myModalAlertMsg").html("Your Password Cannot Be Blank");
+        $("#myModalAlert").show();
+        return;
+    }
+    if (password1 != password2) {
+	$("#myModalAlertMsg").html("Your Passwords Do Not Match");
+        $("#myModalAlert").show();
+        return;
+    }
+    $.post( "https://webrtc.sipmeeting.com:80/api.php", { name: userName,password: password1 })
+      .done(function( data ) {
+        alert( "Data Loaded: " + data );
+    });
+  }
 
+  function login() {
+    $("#myModalAlert").hide();
+    $('#myModal').modal('hide');
+    $("#myLoginModal").modal();
+  }
+
+  function cancelLogin() {    
+    $("#myModalAlert").hide();
+    $('#myLoginModal').modal('hide');
+    $("#myModal").modal();
+  }
 
   function setupUA() {
     rtc = new SIP.UA({
@@ -111,6 +174,7 @@
       session = rtc.invite('sip:6001@webrtc.sipmeeting.com', options);
   }
   $(document).ready(function() {
+       $("#myModalAlert").hide();
        db = window.openDatabase("WebRTC", "1.0", "Sipmeeting WebRTC", 1000000);
        db.transaction(function(tx) {
            tx.executeSql("CREATE TABLE IF NOT EXISTS users(ID INTEGER PRIMARY KEY ASC, username TEXT, password TEXT, extension TEXT, name TEXT)", []);
@@ -119,8 +183,7 @@
          console.log("Setting up UA");
          //setupUA();
        } else {
-         //show the modal so the person can sign up!
-         $("#myModal").modal();
+           $("#myModal").modal();
        }
   });
 
