@@ -240,7 +240,7 @@
           audio.currentTime = 0;
           clearInterval(ringing);
       });
-      sipSession.on('cancel',function (session) {
+      sipSession.on('reject',function (session) {
         $("#newCall").html("");
         audio.pause();
         audio.currentTime = 0;
@@ -249,9 +249,6 @@
 
       sipSession.on('bye', function(request) {
         $("#newCall").html("");
-        audio.pause();
-        audio.currentTime = 0;
-        clearInterval(ringing);
       });
     });
   }
@@ -290,7 +287,7 @@
           audio.currentTime = 0;
           clearInterval(ringing);
       });
-      session.on('cancel', function (data) {
+      session.on('reject', function (data) {
         $("#newCall").html("");
         audio.pause();
         audio.currentTime = 0;
