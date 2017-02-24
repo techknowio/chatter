@@ -6,8 +6,35 @@
     <link rel="stylesheet" href="css/bootstrap.min.css">
   </head>
   <body>
-    <input type="button" onClick="dial()" value="Dial"> <br />
-    <span id="newCall"></span>
+    <div id="dialpad" style="display: none;">
+      <!--<div class="form-group">
+        <div class="input-group">
+          <label for="dialNumber">Email address</label>
+          <input type="text" class="form-control" id="dialNumber" aria-describedby="dialNumber" placeholder="Enter The Party to Call">
+          <a class="input-group-btn btn btn-default go inline" value="1234">Upload to DocMan</a>
+        </div>-->
+        <!--<div class="row-fluid">
+            <div class="form-group">
+                <label class="control-label">File Name on Upload</label>
+                <div class="input-group ">
+                    <input id="uploadname" type="dialNumber" class="form-control" placeholder="Enter The Party to Call">
+                    <a class="input-group-btn btn btn-primary inline">Upload to DocMan</a>
+                </div>
+            </div>
+        </div>-->
+        <br />
+      <div class="input-group">
+          <input id="uploadname" type="dialNumber" class="form-control" placeholder="Enter The Party To Call">
+          <span class="input-group-btn">
+            <button class="btn btn-primary" onClick ="dialNow()" id="dialNumber" type="button">Call Now</button>
+          </span>
+        </div>
+      </div>
+
+      <br />
+      <input type="button" onClick="logout()" value="Logout"> <br />
+      <span id="newCall"></span>
+    </div>
     <div id="myModal" class="modal fade" role="dialog" tabindex="-1" data-backdrop="static" data-keyboard="false" aria-hidden="true" aria-labelledby="myModalLabel">
       <div class="modal-dialog">
         <div class="modal-content">
@@ -43,7 +70,7 @@
       </div>
     </div>
 
-    <div id="myLoginModal" class="modal fade" role="dialog" tabindex="-1" data-backdrop="static" data-keyboard="false" aria-hidden="true" aria-labelledby="myModalLabel">
+    <div id="myLoginModal" class="modal fade" role="dialog" tabindex="-1" data-backdrop="static" data-keyboard="false" aria-hidden="true" aria-labelledby="myModalLabel" style="display: none;">
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
@@ -51,19 +78,18 @@
           </div>
           <div class="modal-body">
               <div class="form-group">
-                <label for="Your Name">Enter Your Extension</label>
-                <input type="text" class="form-control" id="extension" aria-describedby="extensionHelp" placeholder="Enter Your Extension">
-                <small id="emailHelp" class="form-text text-muted">This is the Extension You Were Given When you Originally Signed Up</small>
+                <label for="Your Name">Enter Your Username</label>
+                <input type="text" class="form-control" id="lgnUsername" aria-describedby="lgnUsernameHelp" placeholder="Enter Your Username">
+                <small id="lgnUsernameHelp" class="form-text text-muted">Enter Your Chatter Username</small>
               </div>
               <div class="form-group">
                 <label for="Your Name">Enter Your Password</label>
-                <input type="password" class="form-control" id="name" aria-describedby="password1Help" placeholder="Enter Your Password">
-                <small id="passwordHelp" class="form-text text-muted">This is your private password, it cannot be recovered</small>
+                <input type="password" id="lgnPassword" class="form-control" id="name" aria-describedby="password1Help" placeholder="Enter Your Password">
+                <small id="passwordHelp" class="form-text text-muted">Enter Your Password</small>
               </div>
           </div>
           <div class="modal-footer">
-            <button type="submit" class="btn btn-success" onClick="cancelLogin()">Cancel</button>
-            <button type="submit" class="btn btn-primary" onClick="loginNow()">Login</button>
+          <button class="btn btn-primary" onClick="loginNow()">Login</button>
           </div>
         </div>
 
@@ -76,17 +102,26 @@
   <script>
     window.$ = window.jQuery = require('./js/jquery-3.1.1.min.js');
   </script>
-  <script src="js/bootstrap.min.js"></script>
+  <script src="js/bootstrap.min.js">
+        $('#myModal').modal('hide');
+        signupdone = 0;
+        login = 0
+  </script>
   <script>
   var db;
   var username;
-  var password;
+  var txtpassword;
   var name;
   var extension;
   var rtc;
   var sipSession;
   var isHiding = 0;
-
+  var firstRegister = 0;
+  var registerCount = 0;
+  var firstLoginInterval;
+  var loginDone = 0;
+  var signupDone = 0;
+  var loginModal = 0;
   function createAccount() {
     $("#myModalAlert").hide();
     var userName = $("#name").val();
@@ -98,23 +133,70 @@
         return;
     }
     if (password1 != password2) {
-	$("#myModalAlertMsg").html("Your Passwords Do Not Match");
-        $("#myModalAlert").show();
         return;
     }
-    $.post( "https://webrtc.sipmeeting.com:80/api.php", { name: userName,password: password1 })
-      .done(function( data ) {
-        alert( "Data Loaded: " + data );
+    $.ajax({
+      url : "https://webrtc.sipmeeting.com:80/api.php",
+      type: 'POST',
+      contentType : 'application/json',
+      data: '{"command": "createAccount", "userName" : "'+userName+'", "password" : "'+password1+'"}',
+      success:function(data) {
+        console.log(data);
+        data = JSON.parse(data);
+        if (data.error > 0) {
+          $("#myModalAlertMsg").html(data.errormsg);
+          $("#myModalAlert").show();
+          return;
+        }
+        if (data.error == 0) {
+          var password = $.md5(userName + '@' + 'webrtc.sipmeeting.com' + ':' + 'webrtc.sipmeeting.com' + ':' + password1);
+          localStorage.setItem("accountInfo", '{"username" : "'+userName+'","password" : "'+password+'", "txtPassword" : "'+password1+'"}');
+           $("#myModalAlert").hide();
+           username = userName;
+           txtpassword = password1;
+           firstRegister = 1;
+           //setup a timer for first Login
+           setupUA();
+           $("#myModalAlert").hide();
+           $('#myModal').modal('hide');
+           $("#myLoginModal").hide();
+           signupDone = 1;
+        }
+      },
+      error: function(data) {console.log(data); }
     });
   }
 
+  function loginNow() {
+    var lgnUsername = $("#lgnUsername").val();
+    var lgnPassword = $("#lgnPassword").val();
+    var password = $.md5(lgnUsername + '@' + 'webrtc.sipmeeting.com' + ':' + 'webrtc.sipmeeting.com' + ':' + lgnPassword);
+    localStorage.setItem("accountInfo", '{"username" : "'+lgnUsername+'","password" : "'+password+'", "txtPassword" : "'+lgnPassword+'"}');
+    txtpassword = lgnPassword;
+    username = lgnUsername;
+    $("#myLoginModal").hide();
+    setupUA();
+    loginDone = 1;
+  }
+
+  function logout() {
+    rtc.stop();
+    localStorage.setItem("accountInfo","");
+    $("#dialpad").hide();
+    $("#myModal").modal();
+  }
   function login() {
     $("#myModalAlert").hide();
     $('#myModal').modal('hide');
-    $("#myLoginModal").modal();
+    if (loginModal == 0) {
+      $("#myLoginModal").modal();
+    } else {
+      $("#myLoginModal").modal('show');
+    }
+    $("#myLoginModal").show();
   }
 
-  function cancelLogin() {    
+  function cancelLogin() {
     $("#myModalAlert").hide();
     $('#myLoginModal').modal('hide');
     $("#myModal").modal();
@@ -122,15 +204,31 @@
 
   function setupUA() {
     rtc = new SIP.UA({
-      uri: '',
-      wsServers: [''],
+      uri: username + '@webrtc.sipmeeting.com',
+      wsServers: ['wss://webrtc.sipmeeting.com:443'],
       register: true,
-      password: '',
+      password: txtpassword,
       traceSip: true,
-      authorizationUser: "",
-      displayName: ''
+      authorizationUser: username,
+      displayName: username
     });
     rtc.start();
+    rtc.on('registered', function(data) {
+      if (loginDone == 1 || signupDone == 1) {
+        $("#dialpad").show();
+        $('#myModal').modal('hide');
+        signupdone = 0;
+        login = 0
+      }
+    });
+    rtc.on('registrationFailed',function(data) {
+        logout();
+        $("#myModalAlertMsg").html("Login Failed, Check Your Username or Password");
+        $("#myModalAlert").show();
+
+        $("#dialpad").hide();
+        $("#myModal").modal();
+    });
     rtc.on('message', onMessage);
     rtc.on('invite', function (session) {
       sipSession = session;
@@ -146,13 +244,6 @@
         $("#newCall").html("");
       });
 
-      sipSession.on('failed', function (data) {
-        $("#newCall").html("");
-      });
-
-      sipSession.on('rejected', function (response, cause) {
-        $("#newCall").html("");
-      });
       sipSession.on('bye', function(request) {
         $("#newCall").html("");
       });
@@ -170,18 +261,21 @@
           }
         }
       };
-
-      session = rtc.invite('sip:6001@webrtc.sipmeeting.com', options);
+      var dialNumber = $("dialNumber").val();
+      session = rtc.invite('sip:'+dialNumber+'@webrtc.sipmeeting.com', options);
   }
   $(document).ready(function() {
        $("#myModalAlert").hide();
-       db = window.openDatabase("WebRTC", "1.0", "Sipmeeting WebRTC", 1000000);
-       db.transaction(function(tx) {
-           tx.executeSql("CREATE TABLE IF NOT EXISTS users(ID INTEGER PRIMARY KEY ASC, username TEXT, password TEXT, extension TEXT, name TEXT)", []);
-         });
+       console.log(localStorage.getItem("accountInfo"));
+       if (localStorage.getItem("accountInfo") != "") {
+         username = JSON.parse(localStorage.getItem("accountInfo")).username;
+         txtpassword = JSON.parse(localStorage.getItem("accountInfo")).txtPassword;
+       }
+       console.log(username);
        if (typeof username !== 'undefined' || username) {
+         $("#dialpad").show();
          console.log("Setting up UA");
-         //setupUA();
+         setupUA();
        } else {
            $("#myModal").modal();
        }
