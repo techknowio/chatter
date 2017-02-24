@@ -201,8 +201,10 @@
     rtc.start();
     rtc.on('registered', function(data) {
       if (loginDone == 1 || signupDone == 1) {
-        $("#dialpad").show();
         $('#myModal').modal('hide');
+        $("#myLoginModal").modal('hide');
+        $("#dialpad").show();
+
         signupdone = 0;
         login = 0
       }
