@@ -320,12 +320,21 @@
   });
 
   function answer() {
+    audio.pause();
+    audio.currentTime = 0;
+    clearInterval(ringing);
     sipSession.accept();
   }
   function hangup() {
+    audio.pause();
+    audio.currentTime = 0;
+    clearInterval(ringing);
     sipSession.bye();
   }
   function cancel() {
+    audio.pause();
+    audio.currentTime = 0;
+    clearInterval(ringing);
     sipSession.cancel();
   }
 
