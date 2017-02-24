@@ -91,9 +91,7 @@
     window.$ = window.jQuery = require('./js/jquery-3.1.1.min.js');
   </script>
   <script src="js/bootstrap.min.js">
-        $('#myModal').modal('hide');
-        signupdone = 0;
-        login = 0
+  <script src="js/jquery.md5.js"></script>
   </script>
   <script>
   var db;
@@ -137,7 +135,7 @@
           return;
         }
         if (data.error == 0) {
-          var password = $.md5(userName + '@' + 'webrtc.sipmeeting.com' + ':' + 'webrtc.sipmeeting.com' + ':' + password1);
+          //var password = $.md5(userName + '@' + 'webrtc.sipmeeting.com' + ':' + 'webrtc.sipmeeting.com' + ':' + password1);
           localStorage.setItem("accountInfo", '{"username" : "'+userName+'","password" : "'+password+'", "txtPassword" : "'+password1+'"}');
            $("#myModalAlert").hide();
            username = userName;
