@@ -6,15 +6,18 @@
     <link rel="stylesheet" href="css/bootstrap.min.css">
   </head>
   <body>
-    <div id="dialpad" style="display: none;">
+    <div id="dialpad" >
       <br />
       <div class="input-group">
-          <input id="uploadname" type="dialNumber" class="form-control" placeholder="Enter The Party To Call">
+          <input type="text" id="dialNumber" class="form-control" placeholder="Enter The Party To Call">
           <span class="input-group-btn">
-            <button class="btn btn-primary" onClick ="dialNow()" id="dialNumber" type="button">Call Now</button>
+            <button class="btn btn-primary" onClick ="dial()" type="button">Call Now</button>
           </span>
         </div>
         <span id="newCall"></span>
+        <br />
+        <video id="remoteVideo" style="display: none;"></video>
+        <video id="localVideo" muted="muted" style="display: none;"></video>
         <br />
         <input type="button" onClick="logout()" value="Logout"> <br />
       </div>
@@ -108,6 +111,8 @@
   var loginDone = 0;
   var signupDone = 0;
   var loginModal = 0;
+  var ringing;
+  var audio;
   function createAccount() {
     $("#myModalAlert").hide();
     var userName = $("#name").val();
@@ -218,22 +223,35 @@
         $("#myModal").modal();
     });
     rtc.on('message', onMessage);
+    function onMessage(message) {
+      alert(message.body);
+    }
     rtc.on('invite', function (session) {
       sipSession = session;
-      console.log(session.remoteIdentity.displayName);
       $("#newCall").html("New Call From : " + session.remoteIdentity.displayName +
-        ' <button type="button" class="btn btn-success" onClick="answer()">Answer</button>'
+        ' <button type="button" class="btn btn-success" onClick="answer()">Answer</button> <button type="button" class="btn btn-danger" onClick="cancel()">Deny</button>'
       );
+      ring();
+      ringing = setInterval(ring,4000);
       sipSession.on('accepted', function (data) {
         $("#newCall").html("On The Call With : " + session.remoteIdentity.displayName +
-          ' <button type="button" class="btn btn-danger" onClick="hangup()">Hangup</button>');
+          ' <button type="button" class="btn btn-danger" onCsession.remoteIdentity.displayNamelick="hangup()">Hangup</button>');
+          audio.pause();
+          audio.currentTime = 0;
+          clearInterval(ringing);
       });
       sipSession.on('cancel',function (session) {
         $("#newCall").html("");
+        audio.pause();
+        audio.currentTime = 0;
+        clearInterval(ringing);
       });
 
       sipSession.on('bye', function(request) {
         $("#newCall").html("");
+        audio.pause();
+        audio.currentTime = 0;
+        clearInterval(ringing);
       });
     });
   }
@@ -242,15 +260,50 @@
     console.log(message);
   }
   function dial() {
-      var options = {
+    var options = {
         media: {
-          constraints: {
-            audio: true
-          }
+            constraints: {
+                audio: true,
+                video: false
+            },
+            render: {
+                remote: document.getElementById('remoteVideo'),
+                local: document.getElementById('localVideo')
+            }
         }
-      };
-      var dialNumber = $("dialNumber").val();
+    };
+      var dialNumber = $("#dialNumber").val();
       session = rtc.invite('sip:'+dialNumber+'@webrtc.sipmeeting.com', options);
+      sipSession = session;
+      session.on('progress',function(p) {
+        $("#newCall").html("On The Call With : " + $('#dialNumber').val() +
+          ' <button type="button" class="btn btn-danger" onClick="cancel()">Hangup</button>');
+        if (p.status_code == 180) {
+          ring();
+          ringing = setInterval(ring,4000);
+        }
+      });
+      session.on('accepted', function (data) {
+        $("#newCall").html("On The Call With : " + $('#dialNumber').val() +
+          ' <button type="button" class="btn btn-danger" onClick="hangup()">Hangup</button>');
+          audio.pause();
+          audio.currentTime = 0;
+          clearInterval(ringing);
+      });
+      session.on('cancel', function (data) {
+        $("#newCall").html("");
+        audio.pause();
+        audio.currentTime = 0;
+        clearInterval(ringing);
+      });
+      session.on('bye', function(request) {
+        $("#newCall").html("");
+      });
+  }
+  function ring() {
+    audio = new Audio('sounds/ring.mp3');
+    audio.play();
+
   }
   $(document).ready(function() {
        $("#myModalAlert").hide();
@@ -274,6 +327,9 @@
   }
   function hangup() {
     sipSession.bye();
+  }
+  function cancel() {
+    sipSession.cancel();
   }
 
   </script>
