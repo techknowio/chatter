@@ -7,22 +7,7 @@
   </head>
   <body>
     <div id="dialpad" style="display: none;">
-      <!--<div class="form-group">
-        <div class="input-group">
-          <label for="dialNumber">Email address</label>
-          <input type="text" class="form-control" id="dialNumber" aria-describedby="dialNumber" placeholder="Enter The Party to Call">
-          <a class="input-group-btn btn btn-default go inline" value="1234">Upload to DocMan</a>
-        </div>-->
-        <!--<div class="row-fluid">
-            <div class="form-group">
-                <label class="control-label">File Name on Upload</label>
-                <div class="input-group ">
-                    <input id="uploadname" type="dialNumber" class="form-control" placeholder="Enter The Party to Call">
-                    <a class="input-group-btn btn btn-primary inline">Upload to DocMan</a>
-                </div>
-            </div>
-        </div>-->
-        <br />
+      <br />
       <div class="input-group">
           <input id="uploadname" type="dialNumber" class="form-control" placeholder="Enter The Party To Call">
           <span class="input-group-btn">
@@ -267,7 +252,7 @@
   $(document).ready(function() {
        $("#myModalAlert").hide();
        console.log(localStorage.getItem("accountInfo"));
-       if (localStorage.getItem("accountInfo") != "") {
+       if (localStorage.getItem("accountInfo") != "" && localStorage.getItem("accountInfo") != null) {
          username = JSON.parse(localStorage.getItem("accountInfo")).username;
          txtpassword = JSON.parse(localStorage.getItem("accountInfo")).txtPassword;
        }
